@@ -1,4 +1,7 @@
-{nixpkgs ? import <nixpkgs> {}}:
+{
+  nixpkgs ? import <nixpkgs> {}
+, fakedir ? import (fetchTarball "https://github.com/nixie-dev/fakedir/archive/b0f70b805aa86fe881eeca642f12069c7983a8e7.tar.gz") {}
+}:
 
 with nixpkgs;
 
@@ -32,15 +35,17 @@ in rec {
   maketar = { targets }:
     stdenv.mkDerivation {
       name = "maketar";
-      buildInputs = [ perl ];
+      buildInputs = [ perl gnutar ];
       exportReferencesGraph = map (x: [("closure-" + baseNameOf x) x]) targets;
-      buildCommand = ''
+      buildCommand = let
+        additionalPaths = lib.optionalString stdenv.isDarwin "-C ${fakedir} lib";
+      in ''
         storePaths=$(perl ${pathsFromGraph} ./closure-*)
 
         tar -cf - \
           --owner=0 --group=0 --mode=u+rw,uga+r \
           --hard-dereference \
-          $storePaths | bzip2 -z > $out
+          $storePaths ${additionalPaths} | bzip2 -z > $out
       '';
     };
 
@@ -88,11 +93,23 @@ in rec {
   let
     # Avoid re-adding a store path into the store
     path = toStorePath target;
+    script-linux = ''
+      .${nix-user-chroot'}/bin/nix-user-chroot -n ./nix ${nixUserChrootFlags} -- ${path}${run} "$@"
+    '';
+    script-macos = ''
+      # use absolute paths so the environment variables don't get reinterpreted after a cd
+      cur_dir=$(pwd)
+      export DYLD_INSERT_LIBRARIES="''${cur_dir}/lib/libfakedir.dylib"
+      export FAKEDIR_PATTERN=/nix
+      export FAKEDIR_TARGET="''${cur_dir}/nix"
+      exec .${path}${run} "$@"
+    '';
+    script = if stdenv.isDarwin then script-macos else script-linux;
   in
   writeScript "startup" ''
     #!/bin/sh
     ${initScript}
-    .${nix-user-chroot'}/bin/nix-user-chroot -n ./nix ${nixUserChrootFlags} -- ${path}${run} "$@"
+    ${script}
   '';
 
   nix-bootstrap = { target, extraTargets ? [], run, nix-user-chroot' ? nix-user-chroot, nixUserChrootFlags ? "", initScript ? "" }:

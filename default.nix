@@ -7,10 +7,7 @@ with nixpkgs;
 
 let
   arx' = haskellPackages.arx.overrideAttrs (o: {
-    patchPhase = (o.patchPhase or "") + ''
-      substituteInPlace model-scripts/tmpx.sh \
-        --replace /tmp/ \$HOME/.cache/
-    '';
+    patches = (o.patches or []) ++ [./arx-multi-bin.patch];
   });
 in rec {
   toStorePath = target:
@@ -27,7 +24,7 @@ in rec {
     stdenv.mkDerivation {
       name = "arx";
       buildCommand = ''
-        ${arx'}/bin/arx tmpx --shared -rm! ${archive} -o $out // ${startup}
+        ${arx'}/bin/arx tmpx --shared -rm! ${archive} -o $out -e ${startup}
         chmod +x $out
       '';
     };
@@ -94,15 +91,17 @@ in rec {
     # Avoid re-adding a store path into the store
     path = toStorePath target;
     script-linux = ''
-      .${nix-user-chroot'}/bin/nix-user-chroot -n ./nix ${nixUserChrootFlags} -- ${path}${run} "$@"
+      exec .${nix-user-chroot'}/bin/nix-user-chroot -n ./nix ${nixUserChrootFlags} -- ".$(basename "$0")/$(dirname ${path}${run})" "$@"
     '';
     script-macos = ''
       # use absolute paths so the environment variables don't get reinterpreted after a cd
-      cur_dir=$(pwd)
-      export DYLD_INSERT_LIBRARIES="''${cur_dir}/lib/libfakedir.dylib"
+      __TMPX_DAT_PATH=$(pwd)
+      cd "''${TMPX_RESTORE_PWD}"
+      export DYLD_INSERT_LIBRARIES="''${__TMPX_DAT_PATH}/lib/libfakedir.dylib"
       export FAKEDIR_PATTERN=/nix
-      export FAKEDIR_TARGET="''${cur_dir}/nix"
-      exec .${path}${run} "$@"
+      export FAKEDIR_TARGET="''${__TMPX_DAT_PATH}/nix"
+
+      exec "''${__TMPX_DAT_PATH}$(basename "$0")/$(dirname ${path}${run})/$(basename "$0")" "$@"
     '';
     script = if stdenv.isDarwin then script-macos else script-linux;
   in
@@ -116,7 +115,7 @@ in rec {
     let
       script = makeStartup { inherit target nixUserChrootFlags nix-user-chroot' run initScript; };
     in makebootstrap {
-      startup = ".${script} '\"$@\"'";
+      startup = script;
       targets = [ "${script}" ] ++ extraTargets;
     };
 

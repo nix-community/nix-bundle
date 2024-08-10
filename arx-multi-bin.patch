@@ -1,0 +1,44 @@
+diff --git a/model-scripts/tmpx.sh b/model-scripts/tmpx.sh
+index 9c2ec6f..aa6fea9 100755
+--- a/model-scripts/tmpx.sh
++++ b/model-scripts/tmpx.sh
+@@ -4,6 +4,7 @@ unset rm_ dir
+ tmp=true ; run=true
+ tmpdir= ; rm0=true ; rm1=true ; shared=false ; hash="" # To be set by tool.
+ token=`date -u +%FT%TZ | tr -d :-`-`hexdump -n4 -e '"%08x"' </dev/urandom`
++prog_name="$0"
+ opts() {
+   cmd="$1" ; shift
+   n=$#
+@@ -39,9 +40,9 @@ opts() {
+     if $shared
+     then
+       rm_=false
+-      dir="$tmpdir"/tmpx-"$hash"
++      dir="$HOME"/.cache/tmpx-"$hash"
+     else
+-      dir="$tmpdir"/tmpx-"$token"
++      dir="$HOME"/.cache/tmpx-"$token"
+     fi
+     : ${rm_:=true}
+     if $rm_
+@@ -53,6 +54,7 @@ opts() {
+       trap 'exit 2' HUP INT QUIT BUS SEGV PIPE TERM
+     fi
+     mkdir -p "$dir"
++    export TMPX_RESTORE_PWD=$(pwd)
+     cd "$dir"
+   fi
+   # Call the command with the reassembled ARGV, options removed.
+@@ -72,7 +74,10 @@ go () {
+   fi
+   if $run
+   then
+-    ( . ../env && exec ../run "$@" )
++    (
++      . ../env
++      exec -a "${prog_name}" sh -c ". ../run" "${prog_name}" "$@"
++    )
+   fi
+ }
+ unpack_env () { : # NOOP

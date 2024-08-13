@@ -8,7 +8,7 @@
     bundlers = {
       nix-bundle = { program, system }: let
         nixpkgs' = nixpkgs.legacyPackages.${system};
-        fakedir = fakedir-pkgs.packages.${system}.fakedir.overrideAttrs (old: { patches = [./fakedir-null-buffer.patch]; });
+        fakedir = fakedir-pkgs.packages.${system}.fakedir-universal;
         nix-bundle = import self { nixpkgs = nixpkgs'; inherit fakedir; };
         script-linux = nixpkgs'.writeScript "startup" ''
           #!/bin/sh
@@ -23,7 +23,8 @@
           export FAKEDIR_PATTERN=/nix
           export FAKEDIR_TARGET="''${__TMPX_DAT_PATH}/nix"
 
-          exec "''${__TMPX_DAT_PATH}$(dirname ${program})/$(basename "$0")" "$@"
+          # make sure the fakedir libraries are loaded and avoid sh execing without the libraries loaded first
+          sh -c "test -e $DYLD_INSERT_LIBRARIES && ''${__TMPX_DAT_PATH}$(dirname ${program})/$(basename "$0") $@"
         '';
         script = if nixpkgs'.stdenv.isDarwin then script-darwin else script-linux;
       in nix-bundle.makebootstrap {

@@ -6,11 +6,11 @@
         "utils": "utils"
       },
       "locked": {
-        "lastModified": 1719499522,
-        "narHash": "sha256-WxdRtXL5p6BMjLoXDGkur0c6DXNNr1dCajOmX1tUlr8=",
+        "lastModified": 1723473839,
+        "narHash": "sha256-krWOwpqjg83Y5e9ly8IJ81icqH4YUNbkIIW1jqiaYhY=",
         "owner": "nixie-dev",
         "repo": "fakedir",
-        "rev": "b0f70b805aa86fe881eeca642f12069c7983a8e7",
+        "rev": "a2bd8d0eb974bcbfbc4963e7c61a7162968cee6b",
         "type": "github"
       },
       "original": {

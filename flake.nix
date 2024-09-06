@@ -11,11 +11,11 @@
         fakedir = fakedir-pkgs.packages.${system}.fakedir-universal;
         nix-bundle = import self { nixpkgs = nixpkgs'; inherit fakedir; };
         script-linux = nixpkgs'.writeScript "startup" ''
-          #!/bin/sh
+          #!/usr/bin/env bash
           exec .${nix-bundle.nix-user-chroot}/bin/nix-user-chroot -n ./nix -- "$(dirname ${program})/$(basename "$0")" "$@"
         '';
         script-darwin = nixpkgs'.writeScript "startup" ''
-          #!/bin/sh
+          #!/usr/bin/env bash
           # use absolute paths so the environment variables don't get reinterpreted after a cd
           __TMPX_DAT_PATH=$(pwd)
           cd "''${TMPX_RESTORE_PWD}"

@@ -1,8 +1,12 @@
 diff --git a/model-scripts/tmpx.sh b/model-scripts/tmpx.sh
-index 9c2ec6f..aa6fea9 100755
+index 9c2ec6f..0d59c1f 100755
 --- a/model-scripts/tmpx.sh
 +++ b/model-scripts/tmpx.sh
-@@ -4,6 +4,7 @@ unset rm_ dir
+@@ -1,9 +1,10 @@
+-#!/bin/sh
++#!/usr/bin/env bash
+ set -e -u
+ unset rm_ dir
  tmp=true ; run=true
  tmpdir= ; rm0=true ; rm1=true ; shared=false ; hash="" # To be set by tool.
  token=`date -u +%FT%TZ | tr -d :-`-`hexdump -n4 -e '"%08x"' </dev/urandom`
@@ -30,14 +34,15 @@ index 9c2ec6f..aa6fea9 100755
      cd "$dir"
    fi
    # Call the command with the reassembled ARGV, options removed.
-@@ -72,7 +74,10 @@ go () {
+@@ -72,7 +74,11 @@ go () {
    fi
    if $run
    then
 -    ( . ../env && exec ../run "$@" )
++    echo "${prog_name}"
 +    (
 +      . ../env
-+      exec -a "${prog_name}" sh -c ". ../run" "${prog_name}" "$@"
++      exec -a "${prog_name}" bash -c ". ../run" "${prog_name}" "$@"
 +    )
    fi
  }

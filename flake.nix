@@ -12,7 +12,7 @@
         nix-bundle = import self { nixpkgs = nixpkgs'; inherit fakedir; };
         script-linux = nixpkgs'.writeScript "startup" ''
           #!/usr/bin/env bash
-          exec .${nix-bundle.nix-user-chroot}/bin/nix-user-chroot -n ./nix -- "$(dirname ${program})/$(basename "$0")" "$@"
+          exec .${nix-bundle.nix-user-chroot}/bin/nix-user-chroot -n ./nix -w "''${TMPX_RESTORE_PWD}" -- "$(dirname ${program})/$(basename "$0")" "$@"
         '';
         script-darwin = nixpkgs'.writeScript "startup" ''
           #!/usr/bin/env bash

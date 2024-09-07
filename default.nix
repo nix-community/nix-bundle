@@ -91,7 +91,7 @@ in rec {
     # Avoid re-adding a store path into the store
     path = toStorePath target;
     script-linux = ''
-      exec .${nix-user-chroot'}/bin/nix-user-chroot -n ./nix ${nixUserChrootFlags} -- ".$(basename "$0")/$(dirname ${path}${run})" "$@"
+      exec .${nix-user-chroot'}/bin/nix-user-chroot -n ./nix -w ''${TMPX_RESTORE_PWD} ${nixUserChrootFlags} -- ".$(basename "$0")/$(dirname ${path}${run})" "$@"
     '';
     script-macos = ''
       # use absolute paths so the environment variables don't get reinterpreted after a cd

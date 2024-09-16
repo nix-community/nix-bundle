@@ -12,7 +12,7 @@
         nix-bundle = import self { nixpkgs = nixpkgs'; inherit fakedir; };
         script-linux = nixpkgs'.writeScript "startup" ''
           #!/usr/bin/env bash
-          exec .${nix-bundle.nix-user-chroot}/bin/nix-user-chroot -n ./nix -w "''${TMPX_RESTORE_PWD}" -- "$(dirname ${program})/$(basename "$0")" "$@"
+          exec .${nix-bundle.nix-user-chroot}/bin/nix-user-chroot -n ./nix -w "''${TMPX_RESTORE_PWD}" -- "$(dirname ${program})/$(basename $0)" "$@"
         '';
         script-darwin = nixpkgs'.writeScript "startup" ''
           #!/usr/bin/env bash
@@ -24,7 +24,9 @@
           export FAKEDIR_TARGET="''${__TMPX_DAT_PATH}/nix"
 
           # make sure the fakedir libraries are loaded by running the command in bash within the bottle
-          exec "''${__TMPX_DAT_PATH}/${nixpkgs'.bash}/bin/bash" -c "exec ''${__TMPX_DAT_PATH}$(dirname ${program})/$(basename "$0") $@"
+          exec "''${__TMPX_DAT_PATH}/${nixpkgs'.bash}/bin/bash" <<-EOH
+            ''${__TMPX_DAT_PATH}$(dirname ${program})/$(basename $0) $@
+          EOH
         '';
         script = if nixpkgs'.stdenv.isDarwin then script-darwin else script-linux;
       in nix-bundle.makebootstrap {

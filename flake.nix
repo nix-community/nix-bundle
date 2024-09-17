@@ -24,9 +24,12 @@
           export FAKEDIR_TARGET="''${__TMPX_DAT_PATH}/nix"
 
           # make sure the fakedir libraries are loaded by running the command in bash within the bottle
-          exec "''${__TMPX_DAT_PATH}/${nixpkgs'.bash}/bin/bash" <<-EOH
-            ''${__TMPX_DAT_PATH}$(dirname ${program})/$(basename $0) $@
+          cmd="$(cat <<-EOH
+            ''${__TMPX_DAT_PATH}$(dirname ${program})/$(basename $0)
           EOH
+          )"
+          args="$@"
+          exec "''${__TMPX_DAT_PATH}/${nixpkgs'.bash}/bin/bash" -c "$cmd $args"
         '';
         script = if nixpkgs'.stdenv.isDarwin then script-darwin else script-linux;
       in nix-bundle.makebootstrap {

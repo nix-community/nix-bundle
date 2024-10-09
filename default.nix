@@ -1,13 +1,13 @@
-{nixpkgs ? import <nixpkgs> {}}:
+{
+  nixpkgs ? import <nixpkgs> {}
+, fakedir ? import (fetchTarball "https://github.com/nixie-dev/fakedir/archive/b0f70b805aa86fe881eeca642f12069c7983a8e7.tar.gz") {}
+}:
 
 with nixpkgs;
 
 let
   arx' = haskellPackages.arx.overrideAttrs (o: {
-    patchPhase = (o.patchPhase or "") + ''
-      substituteInPlace model-scripts/tmpx.sh \
-        --replace /tmp/ \$HOME/.cache/
-    '';
+    patches = (o.patches or []) ++ [./arx-multi-bin.patch];
   });
 in rec {
   toStorePath = target:
@@ -24,7 +24,7 @@ in rec {
     stdenv.mkDerivation {
       name = "arx";
       buildCommand = ''
-        ${arx'}/bin/arx tmpx --shared -rm! ${archive} -o $out // ${startup}
+        ${arx'}/bin/arx tmpx --shared -rm! ${archive} -o $out -e ${startup}
         chmod +x $out
       '';
     };
@@ -32,15 +32,17 @@ in rec {
   maketar = { targets }:
     stdenv.mkDerivation {
       name = "maketar";
-      buildInputs = [ perl ];
+      buildInputs = [ perl gnutar ];
       exportReferencesGraph = map (x: [("closure-" + baseNameOf x) x]) targets;
-      buildCommand = ''
+      buildCommand = let
+        additionalPaths = lib.optionalString stdenv.isDarwin "-C ${fakedir} lib";
+      in ''
         storePaths=$(perl ${pathsFromGraph} ./closure-*)
 
         tar -cf - \
           --owner=0 --group=0 --mode=u+rw,uga+r \
           --hard-dereference \
-          $storePaths | bzip2 -z > $out
+          $storePaths ${additionalPaths} | bzip2 -z > $out
       '';
     };
 
@@ -88,18 +90,32 @@ in rec {
   let
     # Avoid re-adding a store path into the store
     path = toStorePath target;
+    script-linux = ''
+      exec .${nix-user-chroot'}/bin/nix-user-chroot -n ./nix -w ''${TMPX_RESTORE_PWD} ${nixUserChrootFlags} -- ".$(basename "$0")/$(dirname ${path}${run})" "$@"
+    '';
+    script-macos = ''
+      # use absolute paths so the environment variables don't get reinterpreted after a cd
+      __TMPX_DAT_PATH=$(pwd)
+      cd "''${TMPX_RESTORE_PWD}"
+      export DYLD_INSERT_LIBRARIES="''${__TMPX_DAT_PATH}/lib/libfakedir.dylib"
+      export FAKEDIR_PATTERN=/nix
+      export FAKEDIR_TARGET="''${__TMPX_DAT_PATH}/nix"
+
+      exec "''${__TMPX_DAT_PATH}$(basename "$0")/$(dirname ${path}${run})/$(basename "$0")" "$@"
+    '';
+    script = if stdenv.isDarwin then script-macos else script-linux;
   in
   writeScript "startup" ''
     #!/bin/sh
     ${initScript}
-    .${nix-user-chroot'}/bin/nix-user-chroot -n ./nix ${nixUserChrootFlags} -- ${path}${run} "$@"
+    ${script}
   '';
 
   nix-bootstrap = { target, extraTargets ? [], run, nix-user-chroot' ? nix-user-chroot, nixUserChrootFlags ? "", initScript ? "" }:
     let
       script = makeStartup { inherit target nixUserChrootFlags nix-user-chroot' run initScript; };
     in makebootstrap {
-      startup = ".${script} '\"$@\"'";
+      startup = script;
       targets = [ "${script}" ] ++ extraTargets;
     };
 

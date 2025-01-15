@@ -57,6 +57,16 @@ Or if you want to try graphical applications:
 ./nix-bundle.sh ivan /bin/ivan
 ```
 
+### Using the `nix bundle` command
+
+This command is provided by Nix, so that Nix ends up calling `nix-bundle` for you.
+It requires the `nix-command` and `flakes` experimental features to be enabled.
+
+We use `meta.mainProgram` attribute and other indicators to decide which executable to bundle.
+
+```sh
+nix bundle nixpkgs#hello --bundler github:nix-community/nix-bundle
+```
 
 ## Self-bundling (meta)
 

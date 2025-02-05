@@ -13,9 +13,17 @@ rec {
     # in the context automatically.
     else "${target}";
 
-  arx = { drvToBundle, archive, startup}:
+  arx = { drvToBundle, archive, startup }:
+    let
+      name =
+        if drvToBundle != null && drvToBundle ? pname then
+          "${drvToBundle.pname}-arx"
+        else if drvToBundle != null && drvToBundle ? name then
+          "${drvToBundle.name}-arx"
+        else "arx";
+    in
     stdenv.mkDerivation {
-      name = if drvToBundle != null then "${drvToBundle.pname}-arx" else "arx";
+      inherit name;
       passthru = {
         inherit drvToBundle;
       };

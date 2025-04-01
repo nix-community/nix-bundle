@@ -36,7 +36,8 @@ in
         exit 1
       fi
 
-      storePaths=$(${perl}/bin/perl ${closureInfo} ./closure-*)
+      closure=$(closureInfo { rootPaths = targets; })
+      storePaths=$(cat ${closure}/store-paths)
 
       mkdir -p $out/${name}.AppDir
       cd $out/${name}.AppDir

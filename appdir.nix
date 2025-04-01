@@ -1,4 +1,4 @@
-{ stdenv, lib, fetchurl, muslPkgs, perl, pathsFromGraph, fetchFromGitHub, coreutils, bash }:
+{ stdenv, lib, fetchurl, muslPkgs, perl, closureInfo, fetchFromGitHub, coreutils, bash }:
 
 let
   AppRun = targets: muslPkgs.stdenv.mkDerivation {
@@ -36,7 +36,7 @@ in
         exit 1
       fi
 
-      storePaths=$(${perl}/bin/perl ${pathsFromGraph} ./closure-*)
+      storePaths=$(${perl}/bin/perl ${closureInfo} ./closure-*)
 
       mkdir -p $out/${name}.AppDir
       cd $out/${name}.AppDir

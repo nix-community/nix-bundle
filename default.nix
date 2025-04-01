@@ -36,7 +36,7 @@ rec {
       buildInputs = [ perl ];
       exportReferencesGraph = map (x: [("closure-" + baseNameOf x) x]) targets;
       buildCommand = ''
-        storePaths=$(perl ${pathsFromGraph} ./closure-*)
+        storePaths=$(perl ${closureInfo} ./closure-*)
 
         # https://reproducible-builds.org/docs/archives
         tar -cf - \

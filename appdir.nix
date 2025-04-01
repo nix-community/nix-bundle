@@ -19,7 +19,10 @@ let
 
 in
 
-  { target, name, extraTargets ? [ coreutils bash ] }: let targets = ([ target ] ++ extraTargets);
+  { target, name, extraTargets ? [ coreutils bash ] }:
+  let
+    targets = ([ target ] ++ extraTargets);
+    closure = closureInfo { rootPaths = targets; };
   in stdenv.mkDerivation {
     name = "${name}.AppDir";
     exportReferencesGraph = map (x: [("closure-" + baseNameOf x) x]) targets;
@@ -36,7 +39,6 @@ in
         exit 1
       fi
 
-      closure=$(closureInfo { rootPaths = targets; })
       storePaths=$(cat ${closure}/store-paths)
 
       mkdir -p $out/${name}.AppDir

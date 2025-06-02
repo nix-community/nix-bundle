@@ -7,48 +7,40 @@
   };
 
   outputs =
-    inputs:
-    let
-      inherit (inputs.nixpkgs) lib;
+    {
+      ...
+    }@inputs:
 
-      getExe =
-        x:
-        lib.getExe' x (
-          x.meta.mainProgram or (lib.warn
-            "nix-bundle: Package ${
-              lib.strings.escapeNixIdentifier x.meta.name or x.pname or x.name
-            } does not have the meta.mainProgram attribute. Assuming you want '${lib.getName x}'."
-            lib.getName
-            x
-          )
-        );
-    in
-    inputs.utils.lib.eachDefaultSystem (
+    {
+      overlays.default = import ./overlays/default.nix;
+    }
+    // inputs.utils.lib.eachDefaultSystem (
       system:
       let
-        nix-bundle-fun =
-          {
-            drv,
-            programPath ? getExe drv,
-          }:
-          let
-            nixpkgs = inputs.nixpkgs.legacyPackages.${system};
-            nix-bundle = import inputs.self { inherit nixpkgs; };
-            script = nixpkgs.writeScript "startup" ''
-              #!/bin/sh
-              .${nix-bundle.nix-user-chroot}/bin/nix-user-chroot -n ./nix -- ${programPath} "$@"
-            '';
-          in
-          nix-bundle.makebootstrap {
-            drvToBundle = drv;
-            targets = [ script ];
-            startup = ".${builtins.unsafeDiscardStringContext script} '\"$@\"'";
-          };
+        pkgs = import inputs.nixpkgs {
+          system = "${system}";
+          overlays = [
+            inputs.self.overlays.default
+          ];
+        };
+        nix-bundle-lib = import inputs.self { nixpkgs = pkgs; };
       in
       {
         bundlers = {
-          default = inputs.self.bundlers.${system}.nix-bundle;
-          nix-bundle = drv: nix-bundle-fun { inherit drv; };
+          default = inputs.self.bundlers.${system}.toArx;
+          toArx =
+            drvToBundle:
+            nix-bundle-lib.toArxArchX {
+              inherit drvToBundle;
+              pkgsTarget = pkgs;
+            };
+          toArxArm64Cross =
+            drvToBundle:
+            nix-bundle-lib.toArxArchX {
+              inherit drvToBundle;
+              pkgsTarget = pkgs.pkgsCross.aarch64-multiplatform;
+            };
+          identity = drv: drv;
         };
       }
     );

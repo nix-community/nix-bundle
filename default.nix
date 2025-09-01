@@ -31,12 +31,14 @@ rec {
     };
 
   maketar = { targets }:
-    stdenv.mkDerivation {
+    let
+      closure = closureInfo { rootPaths = targets; };
+    in stdenv.mkDerivation {
       name = "maketar";
       buildInputs = [ perl ];
       exportReferencesGraph = map (x: [("closure-" + baseNameOf x) x]) targets;
       buildCommand = ''
-        storePaths=$(perl ${pathsFromGraph} ./closure-*)
+        storePaths=$(cat ${closure}/store-paths)
 
         # https://reproducible-builds.org/docs/archives
         tar -cf - \

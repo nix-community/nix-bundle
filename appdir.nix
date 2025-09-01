@@ -1,4 +1,4 @@
-{ stdenv, lib, fetchurl, muslPkgs, perl, pathsFromGraph, fetchFromGitHub, coreutils, bash }:
+{ stdenv, lib, fetchurl, muslPkgs, perl, closureInfo, fetchFromGitHub, coreutils, bash }:
 
 let
   AppRun = targets: muslPkgs.stdenv.mkDerivation {
@@ -19,7 +19,10 @@ let
 
 in
 
-  { target, name, extraTargets ? [ coreutils bash ] }: let targets = ([ target ] ++ extraTargets);
+  { target, name, extraTargets ? [ coreutils bash ] }:
+  let
+    targets = ([ target ] ++ extraTargets);
+    closure = closureInfo { rootPaths = targets; };
   in stdenv.mkDerivation {
     name = "${name}.AppDir";
     exportReferencesGraph = map (x: [("closure-" + baseNameOf x) x]) targets;
@@ -36,7 +39,7 @@ in
         exit 1
       fi
 
-      storePaths=$(${perl}/bin/perl ${pathsFromGraph} ./closure-*)
+      storePaths=$(cat ${closure}/store-paths)
 
       mkdir -p $out/${name}.AppDir
       cd $out/${name}.AppDir

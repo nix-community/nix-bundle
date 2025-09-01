@@ -1,9 +1,18 @@
-{ stdenv, fetchFromGitHub, writeText, nix, cacert }:
+{
+  stdenv,
+  fetchFromGitHub,
+  writeText,
+  nix,
+  cacert,
+}:
 
 stdenv.mkDerivation {
   name = "nix-installer";
 
-  propagatedBuildInputs = [ nix.out cacert ];
+  propagatedBuildInputs = [
+    nix.out
+    cacert
+  ];
 
   buildCommand = ''
     mkdir -p $out/bin/

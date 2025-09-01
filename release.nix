@@ -1,5 +1,8 @@
-{ nixpkgs ? <nixpkgs>
-, nixpkgs' ? import nixpkgs {}}: with nixpkgs';
+{
+  nixpkgs ? <nixpkgs>,
+  nixpkgs' ? import nixpkgs { },
+}:
+with nixpkgs';
 
 stdenv.mkDerivation rec {
   pname = "nix-bundle";
@@ -9,10 +12,26 @@ stdenv.mkDerivation rec {
   src = ./.;
 
   # coreutils, gnutar is actually needed by nix for bootstrap
-  buildInputs = [ nix coreutils makeWrapper gnutar gzip bzip2 ];
+  buildInputs = [
+    nix
+    coreutils
+    makeWrapper
+    gnutar
+    gzip
+    bzip2
+  ];
 
-  nixBundlePath = lib.makeBinPath [ nix coreutils gnutar gzip bzip2 ];
-  nixRunPath = lib.makeBinPath [ nix coreutils ];
+  nixBundlePath = lib.makeBinPath [
+    nix
+    coreutils
+    gnutar
+    gzip
+    bzip2
+  ];
+  nixRunPath = lib.makeBinPath [
+    nix
+    coreutils
+  ];
 
   makeFlags = [ "PREFIX=$(out)" ];
 
@@ -29,6 +48,6 @@ stdenv.mkDerivation rec {
     platforms = platforms.all;
     description = "Create bundles from Nixpkgs attributes";
     license = licenses.mit;
-    homepage = https://github.com/matthewbauer/nix-bundle;
+    homepage = "https://github.com/matthewbauer/nix-bundle";
   };
 }

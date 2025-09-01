@@ -50,6 +50,8 @@
           default = inputs.self.bundlers.${system}.nix-bundle;
           nix-bundle = drv: nix-bundle-fun { inherit drv; };
         };
+
+        formatter = inputs.nixpkgs.legacyPackages.${system}.nixfmt-tree;
       }
     );
 }
